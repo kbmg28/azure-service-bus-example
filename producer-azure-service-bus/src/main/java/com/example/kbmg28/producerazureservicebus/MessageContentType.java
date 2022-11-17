@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum MessageContentType {
-    TEXT("text/plain"), JSON("application/json"), XML("application/xml");
+    JSON("application/json"), TEXT("text/plain"), XML("application/xml");
 
     private final String messageType;
 }

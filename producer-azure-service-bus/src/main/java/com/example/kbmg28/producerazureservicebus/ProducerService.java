@@ -6,6 +6,7 @@ import com.azure.messaging.servicebus.ServiceBusClientBuilder;
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.azure.messaging.servicebus.ServiceBusSenderClient;
 import com.example.kbmg28.producerazureservicebus.config.AzureProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import java.util.Objects;
 public class ProducerService {
     private final ClientSecretCredential clientSecretCredential;
     private final AzureProperties azureProperties;
+    private final ObjectMapper objectMapper;
 
     public void sendMessage(MessagePayload messagePayload) {
         log.info("Payload: {}", messagePayload);
@@ -28,9 +30,12 @@ public class ProducerService {
             log.info("type is null, using default type: {}", type);
             messagePayload.setType(type);
         }
-        ServiceBusSenderClient senderClient = getServiceBusSenderClient(messagePayload);
 
-        ServiceBusMessage msg = new ServiceBusMessage(messagePayload.getMessage());
+        String jsonString = MessageContentType.JSON.equals(messagePayload.getType()) ?
+                getJsonString(messagePayload) : "{}";
+
+        ServiceBusSenderClient senderClient = getServiceBusSenderClient(messagePayload);
+        ServiceBusMessage msg = new ServiceBusMessage(jsonString);
         msg.setContentType(messagePayload.getType().getMessageType());
 
         log.info("Send message");
@@ -43,6 +48,15 @@ public class ProducerService {
         }
         log.info("Message sent");
 
+    }
+
+    private String getJsonString(MessagePayload messagePayload) {
+        try {
+            return objectMapper.writeValueAsString(messagePayload.getMessage());
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());
+        }
     }
 
     private ServiceBusSenderClient getServiceBusSenderClient(MessagePayload messagePayload) {
